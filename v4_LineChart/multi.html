@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+</style>
+</head>
+<body>
+<svg width="960" height="500"></svg>
+<script src="d3.js"></script>
+<script>
+
+var data = [
+    { date: "20111001", A: 63.4, B: 62.7 },
+    { date: "20111002", A: 58.0, B:	59.9 },
+    { date: "20111003", A: 53.3, B:	59.1 },
+    { date: "20111004", A: 55.7, B:	58.8 },
+    { date: "20111005", A: 64.2, B:	58.7 },
+    { date: "20111006", A: 58.8, B:	57.0 },
+    { date: "20111007", A: 57.9, B:	56.7 },
+    { date: "20111008", A: 61.8, B:	56.8 },
+    { date: "20111009", A: 69.3, B:	56.7 },
+    { date: "20111010", A: 71.2, B:	60.1 },
+    { date: "20111011", A: 68.7, B:	61.1 },
+    { date: "20111012", A: 61.8, B:	61.5 },
+    { date: "20111013", A: 63.0, B:	64.3 },
+    { date: "20111014", A: 66.9, B:	67.1 },
+    { date: "20111015", A: 61.7, B:	64.6 },
+    { date: "20111016", A: 61.8, B:	61.6 },
+    { date: "20111017", A: 62.8, B:	61.1 },
+    { date: "20111018", A: 60.8, B:	59.2 },
+    { date: "20111019", A: 62.1, B:	58.9 },
+    { date: "20111020", A: 65.1, B:	57.2 },
+    { date: "20111021", A: 55.6, B:	56.4 },
+    { date: "20111022", A: 54.4, B:	60.7 }
+];
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 80, bottom: 30, left: 50},
+    width = svg.attr("width") - margin.left - margin.right,
+    height = svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var parseTime = d3.timeParse("%Y%m%d");
+
+var x = d3.scaleTime().range([0, width]),
+    y = d3.scaleLinear().range([height, 0]),
+    z = d3.scaleOrdinal(d3.schemeCategory10);
+
+var line = d3.line()
+    .curve(d3.curveBasis)
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.usage); });
+
+var A = [], B = [];
+for (var i = 0; i < data.length; i++) {
+    data[i].date = parseTime(data[i].date);
+    A.push({ date: data[i].date, usage: data[i].A })
+    B.push({ date: data[i].date, usage: data[i].B })
+}
+
+var routes = [
+    { id: "A", values: A },
+    { id: "B", values: B }
+];
+
+  x.domain(d3.extent(data, function(d) { return d.date; }));
+
+  y.domain([
+    d3.min(routes, function(c) { return d3.min(c.values, function(d) { return d.usage; }); }),
+    d3.max(routes, function(c) { return d3.max(c.values, function(d) { return d.usage; }); })
+  ]);
+
+  z.domain(routes.map(function(c) { return c.id; }));
+
+  g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+  g.append("g")
+      .attr("class", "axis axis--y")
+      .call(d3.axisLeft(y))
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("fill", "#000")
+      .text("Usage, MB");
+
+  var conn = g.selectAll(".conn")
+    .data(routes)
+    .enter().append("g")
+      .attr("class", "conn");
+
+  conn.append("path")
+      .attr("class", "line")
+      .attr("d", function(d) { return line(d.values); })
+      .style("stroke", function(d) { return z(d.id); });
+
+  conn.append("text")
+      .datum(function(d) { return {id: d.id, value: d.values[d.values.length - 1]}; })
+      .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.usage) + ")"; })
+      .attr("x", 3)
+      .attr("dy", "0.35em")
+      .style("font", "10px sans-serif")
+      .text(function(d) { return d.id; });
+
+</script>
+</body></html>

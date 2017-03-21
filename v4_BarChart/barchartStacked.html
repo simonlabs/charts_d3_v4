@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>
+
+.axis .domain {
+  display: none;
+}
+
+</style>
+</head>
+<body>
+<svg width="960" height="500"></svg>
+<script src="d3.js"></script>
+<script>
+
+var cols = [ "Under 5 Years", "5 to 13 Years", "14 to 17 Years", "18 to 24 Years", "25 to 44 Years",
+             "45 to 64 years", "65 years over" ];
+var data = [
+    { state: "AL", data: [ 510504, 552339, 259034, 450818, 1231572, 1215966, 641667 ] },
+    { state: "AK", data: [ 52083, 85640, 42153, 74257, 198724, 183159,50277 ] },
+    { state: "AZ", data: [ 515910, 828669, 362642, 601943, 1804762, 1523681, 862573 ] },
+    { state: "AR", data: [ 202070, 343207, 157204, 264160, 754420, 727124, 407205 ] },
+    { state: "CA", data: [ 2704659, 4499890, 2159981, 3853788, 10604510, 8819342, 4114496 ] },
+    { state: "CO", data: [ 358280, 587154, 261701, 466194, 1464939, 1290094, 511094 ] },
+    { state: "CT", data: [ 211637, 403658, 196918, 325110, 916955, 968967, 478007 ] },
+    { state: "DE", data: [ 59319, 99496, 47414, 84464, 230183, 230528, 121688 ] },
+    { state: "DC", data: [ 36352, 50439, 25225, 75569, 193557, 140043, 70648 ] },
+    { state: "FL", data: [ 1140516, 1938695, 925060, 1607297, 4782119, 4746856, 3187797 ] },
+    { state: "GA", data: [ 740521, 1250460, 557860, 919876, 2846985, 2389018, 981024 ] },
+    { state: "HI", data: [ 87207, 134025, 64011, 124834, 356237, 331817, 190067 ] },
+    { state: "ID", data: [ 121746, 201192, 89702, 147606, 406247, 375173, 182150 ] },
+    { state: "IL", data: [ 894368, 1558919, 725973, 1311479, 3596343, 3239173, 1575308 ] },
+    { state: "IN", data: [ 443089, 780199, 361393, 605863, 1724528, 1647881, 813839 ] },
+    { state: "IA", data: [ 201321, 345409, 165883, 306398, 750505, 788485, 444554 ] },
+    { state: "KS", data: [ 202529, 342134, 155822, 293114, 728166, 713663, 366706 ] },
+    { state: "KY", data: [ 284601, 493536, 229927, 381394, 1179637, 1134283, 565867 ] }
+];
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scaleBand()
+    .rangeRound([0, width])
+    .paddingInner(0.05)
+    .align(0.1);
+
+var y = d3.scaleLinear()
+    .rangeRound([height, 0]);
+
+var z = d3.scaleOrdinal()
+    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+function transformData(data) {
+    var i, j, d, t;
+    for (i = 0; i < data.length; i++) {
+        d = data[i];
+        for (j = 0; j < cols.length; j++) {
+            d[cols[j]] = d.data[j];
+        }
+        for (j = 1, t = 0; j < cols.length; j++) {
+            t += d.data[j];
+        }
+        data[i].total = t;
+    }
+    return data;
+}
+
+function loadData(data) {
+
+  data.sort(function(a, b) { return b.total - a.total; });
+  x.domain(data.map(function(d) { return d.state; }));
+  y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+  z.domain(cols);
+
+  g.append("g")
+    .selectAll("g")
+    .data(d3.stack().keys(cols)(data))
+    .enter().append("g")
+      .attr("fill", function(d) {
+          return z(d.key);
+    })
+    .selectAll("rect")
+    .data(function(d) { return d; })
+    .enter().append("rect")
+      .attr("x", function(d) {
+          return x(d.data.state);
+       })
+      .attr("y", function(d) {
+          return y(d[1]);
+      })
+      .attr("height", function(d) {
+          return y(d[0]) - y(d[1]);
+      })
+      .attr("width", x.bandwidth());
+
+  g.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+  g.append("g")
+      .attr("class", "axis")
+      .call(d3.axisLeft(y).ticks(null, "s"))
+    .append("text")
+      .attr("x", 2)
+      .attr("y", y(y.ticks().pop()) + 0.5)
+      .attr("dy", "0.32em")
+      .attr("fill", "#000")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .text("Population");
+
+  var legend = g.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "end")
+    .selectAll("g")
+    .data(cols.slice().reverse())
+    .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width - 19)
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", z);
+
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9.5)
+      .attr("dy", "0.32em")
+      .text(function(d) { return d; });
+}
+
+loadData(transformData(data));
+
+/*
+d3.csv("data.csv", function(d, i, columns) {
+  for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
+  d.total = t;
+  return d;
+}, function(error, data) {
+  if (error) throw error;
+
+  var keys = data.columns.slice(1);
+
+  data.sort(function(a, b) { return b.total - a.total; });
+  x.domain(data.map(function(d) { return d.state; }));
+  y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+  z.domain(keys);
+
+  g.append("g")
+    .selectAll("g")
+    .data(d3.stack().keys(keys)(data))
+    .enter().append("g")
+      .attr("fill", function(d) { return z(d.key); })
+    .selectAll("rect")
+    .data(function(d) { return d; })
+    .enter().append("rect")
+      .attr("x", function(d) { return x(d.data.state); })
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+      .attr("width", x.bandwidth());
+
+  g.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+  g.append("g")
+      .attr("class", "axis")
+      .call(d3.axisLeft(y).ticks(null, "s"))
+    .append("text")
+      .attr("x", 2)
+      .attr("y", y(y.ticks().pop()) + 0.5)
+      .attr("dy", "0.32em")
+      .attr("fill", "#000")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .text("Population");
+
+  var legend = g.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "end")
+    .selectAll("g")
+    .data(keys.slice().reverse())
+    .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width - 19)
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", z);
+
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9.5)
+      .attr("dy", "0.32em")
+      .text(function(d) { return d; });
+});
+*/
+
+</script>
+</body></html>

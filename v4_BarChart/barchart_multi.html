@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Bar Chart</title>
+<script src="d3.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+<div style="text-align:center;">
+<label>
+    <input type="radio" name="net_intf" value="A" onclick="change(this.value)"> <span style="color:rgb(179,205,227);">A</span>
+</label>
+<label>
+    <input type="radio" name="net_intf" value="B" onclick="change(this.value)"> <span style="color:rgb(251,180,174)">B</span>
+</label>
+<label>
+    <input type="radio" name="net_intf" value="both" onclick="change(this.value)" checked=""> Both
+</label>
+</div>
+<svg class="chart" width="870" height="615"></svg>
+</div>
+
+<script>
+var usage = [
+  {
+    "net_intf": "A",
+    "date": "2017-01-03",
+    "usage": 1578205
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-03",
+    "usage": 90353
+  },
+  {
+    "net_intf": "A",
+    "date": "2017-01-04",
+    "usage": 1668121
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-04",
+    "usage": 87494
+  },
+  {
+    "net_intf": "A",
+    "date": "2017-01-05",
+    "usage": 1780838
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-05",
+    "usage": 78403
+  },
+  {
+    "net_intf": "A",
+    "date": "2017-01-06",
+    "usage": 1861629
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-06",
+    "usage": 60990
+  },
+  {
+    "net_intf": "A",
+    "date": "2017-01-07",
+    "usage": 2152870
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-07",
+    "usage": 65037
+  },
+  {
+    "net_intf": "A",
+    "date": "2017-01-08",
+    "usage": 1585430
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-08",
+    "usage": 97578
+  },
+  {
+    "net_intf": "A",
+    "date": "2017-01-09",
+    "usage": 87209
+  },
+  {
+    "net_intf": "B",
+    "date": "2017-01-09",
+    "usage": 1521317
+  }
+];
+
+var netA = [];
+var netB = [];
+
+for(var i = 0; i < usage.length; i++){
+	if(usage[i].net_intf === "A"){
+		netA.push(usage[i]);
+	}else{
+		netB.push(usage[i]);
+	}
+}
+
+//set up chart
+var margin = {top: 20, right: 20, bottom: 95, left: 80};
+var width = 800;
+var height = 500;
+
+var chart = d3.select(".chart")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+				.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var xChart = d3.scaleBand()
+				.range([0, width]);
+				
+var yChart = d3.scaleLinear()
+				.range([height, 0]);
+
+var xAxis = d3.axisBottom(xChart);
+var yAxis = d3.axisLeft(yChart);
+
+//set up axes
+//left axis
+	chart.append("g")
+		  .attr("class", "y axis")
+		  .call(yAxis)
+		  
+	//bottom axis
+	chart.append("g")
+		.attr("class", "xAxis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis)
+		.selectAll("text")
+			.style("text-anchor", "end")
+			//.attr("dx", "-.8em")
+			.attr("dx", "3em")
+			.attr("dy", "1em");
+			//.attr("transform", function(d){
+			//	return "rotate(-65)";
+			//});
+
+//add labels
+//chart
+//	.append("text")
+//	.attr("transform", "translate(-35," +  (height+margin.bottom)/2 + ") rotate(-90)")
+//	.text("% of total watch time");
+chart
+	.append("text")
+	.attr("transform", "translate(-35,-10)")
+	.text("Usage (MB)");
+		
+//chart
+//	.append("text")
+//	.attr("transform", "translate(" + (width/2) + "," + (height + margin.bottom - 5) + ")")
+//	.text("age group");
+
+// listener to the radio buttons
+function change(value){
+
+	if(value === 'A'){
+		update(netA);
+	}else if(value === 'B'){
+		update(netB);
+	}else{
+		update(usage);
+	}
+}
+
+function update(data){
+	// setting domains
+	xChart.domain(data.map(function(d){ return d.date; }) );
+	yChart.domain( [0, d3.max(data, function(d){ return d.usage; })] );
+	
+	//get the width of each bar 
+	var barWidth = width / data.length;
+	
+	//select all bars on the graph, take them out, and exit the previous data set. 
+	//then you can add/enter the new data set
+	var bars = chart.selectAll(".bar")
+					.remove()
+					.exit()
+					.data(data);
+
+	//now actually give each rectangle the corresponding data
+	bars.enter()
+		.append("rect")
+		.attr("class", "bar")
+		.attr("x", function(d, i){ return i * barWidth + 1 })
+		.attr("y", height)
+		.attr("height", 0)
+		.attr("width", barWidth - 1)
+		.attr("fill", function(d){ 
+			if(d.net_intf === "B"){
+				return "rgb(251,180,174)";
+			}else{
+				return "rgb(179,205,227)";
+			}
+		})
+		.transition()
+		.ease(d3.easeLinear)
+		.delay(function(d, i){ return i*20; })
+		.attr("y", function(d){ return yChart( d.usage); })
+		.attr("height", function(d){ return height - yChart(d.usage); });
+
+	//left axis
+	chart.select('.y')
+		  .call(yAxis)
+	//bottom axis
+	chart.select('.xAxis')
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis)
+		.selectAll("text")
+			.style("text-anchor", "end")
+			//.attr("dx", "-.8em")
+			.attr("dx", "3em")
+			.attr("dy", "1em");
+			//.attr("transform", function(d){
+			//	return "rotate(-65)";
+			//});
+			
+}//end update
+
+update(usage);
+
+</script>
+</body>
+</html>

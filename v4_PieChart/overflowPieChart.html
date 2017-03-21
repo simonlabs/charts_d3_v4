@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- https://bl.ocks.org/mbostock -->
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+.inner-pie {
+    position: absolute;
+    top: 88px;
+    left: 318px;
+}
+</style>
+</head>
+<body>
+
+<div class="container"></div>
+
+<script src="d3.js"></script>
+<script>
+
+var tau = 2 * Math.PI; // http://tauday.com/tau-manifesto
+var width = 960;
+var height = 500;
+
+// An arc function with all values bound except the endAngle. So, to compute an
+// SVG path string for a given angle, we pass an object with an endAngle
+// property to the `arc` function, and it will return the corresponding string.
+var arc = d3.arc()
+            .innerRadius(160)
+            .outerRadius(240)
+            .startAngle(0);
+
+// Get the SVG container, and apply a transform such that the origin is the
+// center of the canvas. This way, we don’t need to position arcs individually.
+var svg = d3.select(".container")
+            .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+var g = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+var ringLabelArc = d3.arc()
+                     .outerRadius(Math.min(width, height)/2)
+                     .innerRadius(Math.min(width, height)/2);
+
+// Add the background arc, from 0 to 100% (tau).
+var background = g.append("path")
+                      .datum({endAngle: tau})
+                      .style("fill", "transparent")
+                      .attr("d", arc);
+
+// Add the foreground arc in orange, currently showing 12.7%.
+var foreground = g.append("path")
+                      .datum({endAngle: 0.2 * tau})   // initially 120%
+                      .style("fill", "#ff0000")
+                      .attr("d", arc);
+
+foreground.append("text")
+ .attr("text-anchor", "middle")
+ .attr("transform", function(d) {
+     return "translate(" + ringLabelArc.centroid(d) + ")";
+ })
+ .text(function(d) { return "20%"; /* d.data.letter; */ })    
+ .style("fill", "#fff")
+ .each(function(d) {
+     this._current = d;             // and, store the initial angles for subsequent update animation
+ });
+
+createInnerPie({
+    side: 340,
+    center: { x: width/2, y: height/2 },
+    containerSelector: ".container",
+    cssClass: "inner-pie",
+    data: [ { label: "100%", value: 1 } ],
+    fillColors: [ "#006400" ]
+});
+
+// Every so often, start a transition to a new random angle. The attrTween
+// definition is encapsulated in a separate function (a closure) below.
+//d3.interval(function() {
+//    foreground.transition()
+//              .duration(750)
+//              .attrTween("d", ringArcTween(Math.random() * tau));
+//}, 1500);
+
+setTimeout(function() {
+    foreground.transition()
+              .duration(750)
+              .attrTween("d", ringArcTween(0.4 * tau));   // then, increased to 140%
+
+foreground.append("text")
+ .attr("text-anchor", "middle")
+ //.attr("transform", function(d) {
+ //    return "translate(" + ringLabelArc.centroid(d) + ")";
+ //})
+ .text(function(d) { return "40%"; /* d.data.letter; */ })    
+ .style("fill", "#fff")
+ .each(function(d) {
+     this._current = d;             // and, store the initial angles for subsequent update animation
+ });
+}, 1500);
+
+// Returns a tween for a transition’s "d" attribute, transitioning any selected
+// arcs from their current angle to the specified new angle.
+function ringArcTween(newAngle) {
+
+    // The function passed to attrTween is invoked for each selected element when
+    // the transition starts, and for each element returns the interpolator to use
+    // over the course of transition. This function is thus responsible for
+    // determining the starting angle of the transition (which is pulled from the
+    // element’s bound datum, d.endAngle), and the ending angle (simply the
+    // newAngle argument to the enclosing function).
+    return function(d) {
+
+        // To interpolate between the two angles, we use the default d3.interpolate.
+        // (Internally, this maps to d3.interpolateNumber, since both of the
+        // arguments to d3.interpolate are numbers.) The returned function takes a
+        // single argument t and returns a number between the starting angle and the
+        // ending angle. When t = 0, it returns d.endAngle; when t = 1, it returns
+        // newAngle; and for 0 < t < 1 it returns an angle in-between.
+        var interpolate = d3.interpolate(d.endAngle, newAngle);
+
+        // The return value of the attrTween is also a function: the function that
+        // we want to run for each tick of the transition. Because we used
+        // attrTween("d"), the return value of this last function will be set to the
+        // "d" attribute at every tick. (It’s also possible to use transition.tween
+        // to run arbitrary code for every tick, say if you want to set multiple
+        // attributes from a single function.) The argument t ranges from 0, at the
+        // start of the transition, to 1, at the end.
+        return function(t) {
+
+            // Calculate the current arc angle based on the transition time, t. Since
+            // the t for the transition and the t for the interpolate both range from
+            // 0 to 1, we can pass t directly to the interpolator.
+            //
+            // Note that the interpolated angle is written into the element’s bound
+            // data object! This is important: it means that if the transition were
+            // interrupted, the data bound to the element would still be consistent
+            // with its appearance. Whenever we start a new arc transition, the
+            // correct starting angle can be inferred from the data.
+            d.endAngle = interpolate(t);
+
+            // Lastly, compute the arc path given the updated data! In effect, this
+            // transition uses data-space interpolation: the data is interpolated
+            // (that is, the end angle) rather than the path string itself.
+            // Interpolating the angles in polar coordinates, rather than the raw path
+            // string, produces valid intermediate arcs during the transition.
+            return arc(d);
+        };
+    };
+}
+
+// create an inner pie chart that is 100% full
+// cfg = {
+//     side: number,
+//     center: { x: number, y: number },
+//     containerSelector: string,
+//     cssClass: string,   // optional
+//     data: [ {label: string, value: number }, ... ],
+//     fillColors: [ "#2c93e8", ... ]   // has the same number as the number of data elements
+// }
+function createInnerPie(cfg) {
+
+    var radius = cfg.side / 2;
+    var isFullPie = cfg.data.length <= 1 ? true : false;
+
+    var color = d3.scaleOrdinal().range(cfg.fillColors);
+
+    // create a pie chart
+    var pie = d3.pie().value(function(d){ return d.value; })(cfg.data);
+
+    var arc = d3.arc()
+                .outerRadius(radius - 10)
+                .innerRadius(0);
+
+    var labelRadius = isFullPie ? 0 : radius - 50;
+    var labelArc = d3.arc()
+                     .outerRadius(labelRadius)
+                     .innerRadius(labelRadius);
+
+    var svg = d3.select(cfg.containerSelector)
+                .append("svg")
+                    .attr("width", cfg.side)
+                    .attr("height", cfg.side)
+                    .attr("class", cfg.cssClass ? cfg.cssClass : "")
+                .append("g")
+                    .attr("transform", "translate(" + radius + "," + radius +")");
+
+    // create arcs one for each partition
+    var g = svg.selectAll("arc")
+               .data(pie)
+               .enter().append("g")
+                   .attr("class", "arc");
+
+    // create path to the arcs of the chart and fill them with the colors
+    g.append("path")
+         .attr("d", arc)
+         .style("fill", function(d) {
+             return color(d.data.label);
+         })
+         .each(function(d) {
+             this._current = d;  // and, store the initial angles for subsequent update animation
+         });
+
+    // create the label text to each partition
+    g.append("text")
+         .attr("text-anchor", "middle")
+         .attr("transform", function(d) {
+             return "translate(" + labelArc.centroid(d) + ")";
+         })
+     .text(function(d) { return d.data.label; })    
+         .style("fill", "#fff")
+     .each(function(d) {
+         this._current = d;             // and, store the initial angles for subsequent update animation
+     });
+}
+
+function arcTween(a) {
+    var i = d3.interpolate(this._current, a);
+    this._current = i(0);
+    return function(t) {
+        return arc(i(t));
+    };
+} 
+
+function labelarcTween(a) {
+    var i = d3.interpolate(this._current, a);
+    this._current = i(0);
+    return function(t) {
+        return "translate(" + labelArc.centroid(i(t)) + ")";
+    };
+}
+
+</script>
+</body>
+</html>

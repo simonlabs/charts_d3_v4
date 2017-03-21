@@ -1,0 +1,54 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../css/styles.css"/>
+<script type="text/javascript" src="../js/jquery-2.1.1.js"></script>
+<script type="text/javascript" src="../js/d3.js" charset="utf-8"></script>
+<script>
+jQuery.noConflict();
+jQuery(document).ready(function($){     // jQuery(function($) {
+    // $ refers to jQuery
+    // this refers to document
+var data = [10, 15, 30, 50, 80, 65, 55, 30, 20, 10, 8]; // <- A
+function render(data) { // <- B
+    // Enter
+    var selection = d3.select("body");
+    var selections = selection.selectAll("div.h-bar")
+        .data(data)
+        .enter()
+        .append("div")
+        .attr("class", "h-bar")
+        .append("span");
+
+    // Update
+    d3.select("body").selectAll("div.h-bar")
+        .data(data)
+        .style("width", function (d) {       // <- H
+            return (d * 3) + "px";
+        })
+        .select("span")                      // <- I
+        .text(function (d) {
+            return d;
+        });
+
+    // Exit
+    d3.select("body").selectAll("div.h-bar")
+        .data(data)
+        .exit()                              // <- J
+        .remove();
+}
+
+setInterval(function () {
+    data.shift();
+    data.push(Math.round(Math.random() * 100));
+    render(data);
+}, 1500);
+
+render(data);
+
+});
+</script>
+</head>
+<body>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Classic Pie Chart</title>
+<script src="d3.js"></script>
+</head>
+
+<!-- arc tween example: http://bl.ocks.org/mbostock/5100636 -->
+<!-- http://cagrimmett.com/til/ -->
+
+<body>
+
+<div class="container"></div>
+
+<script>
+var data = [
+    {"letter": "Gold", "presses": 1},
+    {"letter": "Platinum", "presses": 5},
+    {"letter": "Basic", "presses": 2}
+];
+
+var width = 400, height = 400,
+    radius = Math.min((width-100), (height-100)) / 2;
+
+var color = d3.scaleOrdinal()
+    .range(["#2C93E8","#838690","#F56C4E"]);
+
+// create a pie chart based on data
+var pie = d3.pie()
+            .value(function (d) {
+                return d.presses;
+            })(data);
+
+// create 2 arcs - one is for the chart and the other is to hold the labels. Each has an inner and outer
+// radius.  On the arc for the chart, if the inner radius is any number greater than zero, you will get
+// a doughnut.
+var arc = d3.arc()
+            .outerRadius(radius - 10)
+            .innerRadius(0);
+    
+var labelArc = d3.arc()
+                 //.outerRadius(radius - 50)
+                 //.innerRadius(radius - 50);
+                 .outerRadius(radius*1.2)
+                 .innerRadius(radius*1.1);
+
+var svg =
+    d3.select(".container")
+      .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+      .append("g")                                                          // create a g to group the arcs
+          .attr("transform", "translate(" + width/2 + "," + height/2 +")"); // next, move the g group to
+                                                                            // the center
+
+// create arcs based on the data in the pie chart, create a g group to hold them, and
+// assign CSS class 'arc' to them.
+var g = svg.selectAll("arc")
+           .data(pie)
+           .enter().append("g")
+           .attr("class", "arc");
+
+// create path to the arcs of the chart and fill them with the colors
+g.append("path")
+ .attr("d", arc)
+ .style("fill", function(d) {
+     return color(d.data.letter);
+ })
+ .each(function(d) {
+     this._current = d;             // and, store the initial angles for subsequent update animation
+ });
+	
+
+// create the label text to the label-arcs and assign them a color
+g.append("text")
+ .attr("text-anchor", "middle")
+ .attr("transform", function(d) {
+     return "translate(" + labelArc.centroid(d) + ")";
+ })
+ .text(function(d) { return d.data.letter;})    
+ .style("fill", "#000")
+ .each(function(d) {
+     this._current = d;             // and, store the initial angles for subsequent update animation
+ });
+
+function arcTween(a) {
+    var i = d3.interpolate(this._current, a);
+    this._current = i(0);
+    return function(t) {
+        return arc(i(t));
+    };
+} 
+
+function labelarcTween(a) {
+    var i = d3.interpolate(this._current, a);
+    this._current = i(0);
+    return function(t) {
+        return "translate(" + labelArc.centroid(i(t)) + ")";
+    };
+}
+
+function update(data) {
+    var pie = d3.pie()
+    	        .value(function(d) {
+                    return d.presses;
+                })(data);
+
+    var path = d3.select(".container").selectAll("path").data(pie); // compute the new angles
+    //path.attr("d", arc); // redrawing the path w/o the animation
+    path.transition()
+        .duration(500)
+        .attrTween("d", arcTween);   // animate the drawing of path using the arcTween function
+    
+    d3.selectAll("text")
+      .data(pie)
+      .attr("text-anchor", "middle")
+    // without the animation...
+    //  .attr("transform", function(d) {
+    //      return "translate(" + labelArc.centroid(d) + ")"; // recompute the centroid for the label text arcs
+    //  });
+    // with animation...
+      .transition()
+      .duration(500)
+      .attrTween("transform", labelarcTween);
+
+}
+
+setTimeout(function () {
+    data[0].presses = 4;
+    update(data);
+}, 2000);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="../css/style.css"/>
+<style type="text/css">
+
+#chart-container {
+    position: relative;
+    top: 20px;
+    left: 20px;
+    width: 800px;
+    height: 400px;
+    border: 1px solid #000000;
+}
+
+.axis line,
+.axis path {
+    stroke: #000000;
+    fill: none;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    text-shadow: 0 1px 0 #fff;
+    cursor: move;
+}
+
+.axis .grid-line {
+    stroke: #000000;
+    shape-rendering: crispEdges;
+    stroke-opacity: 0.2;
+}
+
+</style>
+<script type="text/javascript" src="../js/jquery-2.1.1.js"></script>
+<script type="text/javascript" src="../js/d3.js" charset="utf-8"></script>
+<script type="text/javascript">
+
+var data = [
+    { recDate: new Date(2014,10,8).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2014,10,15).getTime(), video: 129, audio: 24 },
+    { recDate: new Date(2014,10,22).getTime(), video: 130, audio: 24 },
+    { recDate: new Date(2014,10,29).getTime(), video: 135, audio: 24 },
+    { recDate: new Date(2014,11,6).getTime(), video: 142, audio: 24 },
+    { recDate: new Date(2014,11,13).getTime(), video: 151, audio: 24 },
+    { recDate: new Date(2014,11,20).getTime(), video: 164, audio: 24 },
+    { recDate: new Date(2014,11,27).getTime(), video: 179, audio: 24 },
+    { recDate: new Date(2015,0,3).getTime(), video: 197, audio: 24 },
+    { recDate: new Date(2015,0,10).getTime(), video: 211, audio: 24 },
+    { recDate: new Date(2015,0,17).getTime(), video: 223, audio: 24 },
+    { recDate: new Date(2015,0,24).getTime(), video: 241, audio: 24 },
+    { recDate: new Date(2015,0,31).getTime(), video: 257, audio: 24 },
+    { recDate: new Date(2015,1,7).getTime(), video: 270, audio: 24 },
+    { recDate: new Date(2015,1,14).getTime(), video: 284, audio: 24 },
+    { recDate: new Date(2015,1,21).getTime(), video: 307, audio: 24 },
+    { recDate: new Date(2015,1,28).getTime(), video: 320, audio: 24 },
+    { recDate: new Date(2015,2,7).getTime(), video: 338, audio: 24 },
+    { recDate: new Date(2015,2,14).getTime(), video: 355, audio: 24 },
+    { recDate: new Date(2015,2,21).getTime(), video: 376, audio: 24 },
+    { recDate: new Date(2015,3,4).getTime(), video: 396, audio: 24 },
+    { recDate: new Date(2015,3,11).getTime(), video: 414, audio: 24 },
+    { recDate: new Date(2015,3,18).getTime(), video: 432, audio: 24 },
+    { recDate: new Date(2015,3,25).getTime(), video: 444, audio: 24 },
+    { recDate: new Date(2015,4,2).getTime(), video: 461, audio: 24 },
+    { recDate: new Date(2015,4,9).getTime(), video: 473, audio: 24 },
+    { recDate: new Date(2015,4,16).getTime(), video: 489, audio: 24 },
+    { recDate: new Date(2015,4,23).getTime(), video: 506, audio: 24 },
+    { recDate: new Date(2015,4,30).getTime(), video: 522, audio: 24 },
+    { recDate: new Date(2015,5,6).getTime(), video: 539, audio: 24 },
+    { recDate: new Date(2015,5,13).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,5,20).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,5,27).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,6,4).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,6,11).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,6,18).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,6,25).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,7,1).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,7,8).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,7,15).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,7,22).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,7,29).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,8,5).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,8,12).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,8,19).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,8,26).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,9,3).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,9,10).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,9,17).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,9,24).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,9,31).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,10,7).getTime(), video: 123, audio: 24 },
+    { recDate: new Date(2015,10,14).getTime(), video: 123, audio: 24 }
+];
+
+var margin = { top: 40, right: 40, bottom: 40, left: 40 }    // space for tick marks and labels
+
+var createContainerDom = function (id, cfg) {
+    // create a <div> container
+    var dom = document.createElement("div");
+    dom.id = id;
+    return dom;
+};
+
+var defineBodyClip = function (svg, id, plotArea, padding) {
+        var padding = 5;
+
+    svg.append("defs")
+           .append("clipPath")
+               .attr("id", id)
+               .append("rect")
+               .attr("x", plotArea.left - padding)
+               .attr("y", plotArea.top - padding)
+               .attr("width", plotArea.width + 2 * padding)
+               .attr("height", plotArea.height + 2 * padding);
+};
+
+var createAxes = function (svg, margin) {
+    var xScale = d3.time.scale()
+                   .domain([new Date(2014,11,1), new Date(2015,8,31)])
+       		       .range([0, svg[0][0].width.baseVal.value - margin.left - margin.right]);
+
+    var yScale = d3.scale.linear().domain([0,527])
+       		       .range([0, -(svg[0][0].height.baseVal.value - margin.top - margin.bottom)]);
+    // Note that the range max is casted to negative.
+    // It is because we are sending the y axis <g> group to the lower-left to ensure that
+    // both the x and y axes have the same axis origin, therefore, we need to draw the y axis
+    // tick marks from bottom to top along the negative direction relative to the origin of
+    // the y axis' <g> group.  Refer to the createYAxis() where the y axis <g> group is created.
+
+    var xAxis = createXAxis(svg, margin, xScale);
+    var yAxis = createYAxis(svg, margin, yScale);
+
+    createGridLines(svg[0][0].parentNode.id, xAxis, yAxis);
+
+    // now rotate text on x axis
+    // solution based on idea here: https://groups.google.com/forum/?fromgroups#!topic/d3-js/heOBPQF3sAY
+    // first move the text left so no longer centered on the tick
+    // then rotate up to get 45 degrees.
+    //
+    // svg.selectAll(".xaxis text")  // select all the text elements for the xaxis
+    //    .attr("transform", function(d) {
+    //        return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-45)";
+    //    });
+
+    return {
+        xAxis: xAxis,
+        xScale: xScale,
+        yAxis: yAxis,
+        yScale: yScale,
+        plotArea: {
+            left: xAxis.svgGroup.left,        // axes x origin relative to svg
+            top: xAxis.svgGroup.top,          // axes y origin relative to svg
+            width: xAxis.svgGroup.width,
+            height: yAxis.svgGroup.height     // negative, a direction goes atop relative to the origin
+        }
+    };
+};
+
+var createXAxis = function (svg, margin, xScale) {
+    var svgDom = svg[0][0];
+    var height = svgDom.clientHeight;
+
+    // create an axis object and bind it to scale
+    var xAxis = d3.svg.axis()
+                  .scale(xScale)
+                  .orient("bottom");
+
+    xAxis.svgGroup = {
+        left: margin.left, top: height - margin.bottom
+    };
+
+    // create a &lt;g&gt; having class="x axis", move it to the bottom, and bind it to axis
+    var g = svg.append("g")
+               .attr("class", "x axis")
+               .attr("transform", function () {
+                   return "translate("+xAxis.svgGroup.left+","+xAxis.svgGroup.top+")";
+               })
+               .call(xAxis);
+    xAxis.svgGroup.g = g;
+
+    // as the axis object is bound to the SVG g, children &lt;g&gt; for each tick are created
+    // g class="x axis"
+    //     g class="tick"
+    //         line x2="-6" y2="0" /text                  -- the tick mark
+    //         text x="-9" y="0" dy=".32em" style="..."   -- the tick label
+    //             string
+    //         /text
+    //     /g
+    //     ...
+    // /g
+
+    // path.animatedPathSegList
+    // for (i = 0; i < path.animatedPathSegList.length; i++) {
+    //     seg = path.getItem(i);   // SVGPathSeg seg
+    //     if (seg.pathSegType != 12) { continue; }  // 12 = SVGPathSegLinetoHorizontalAbs
+    //     width = seg.x;
+    //     break;
+    // }
+    var gDom = g[0][0], seg;
+    var path = gDom.getElementsByTagName("path")[0];
+    for (var i = 0; i < path.animatedPathSegList.length; i++) {
+        seg = path.animatedPathSegList.getItem(i);   // SVGPathSeg seg
+        if (seg.pathSegType != 12) { continue; }  // 12 = SVGPathSegLinetoHorizontalAbs
+        xAxis.svgGroup.width = seg.x;
+        break;
+    }
+
+    return xAxis;
+};
+
+var createYAxis = function (svg, margin, yScale) {
+    var svgDom = svg[0][0];
+    var width = svgDom.clientWidth;
+    var height = svgDom.clientHeight;
+
+    // create an axis object and bind it to yScale
+    var yAxis = d3.svg.axis()
+                  .scale(yScale)
+                  .ticks(6)
+                  .orient("left");
+
+    yAxis.svgGroup = {
+        left: margin.left, top: height - margin.bottom
+    };
+
+    // create a <g> having class="y axis", move it to the top-left margin, and bind it to axis
+    var g = svg.append("g")
+               .attr("class", "y axis")
+               .attr("transform", function () {
+                   return "translate("+yAxis.svgGroup.left+","+yAxis.svgGroup.top+")";
+               })
+               .call(yAxis);
+    yAxis.svgGroup.g = g;
+    // Note that the y axis <g> group is moved to the low-left to ensure the same axes origin
+    // as the x axis' <g> group is.  Because of moving the y axis <g> group to the low-left,
+    // all of its ticks must be drawn from the bottom to the top along the y axis on a negative
+    // direction relative to the y axis's <g> group.  In order to do that, the range max to
+    // the yScale needs to be casted to negative.  Refer to the createAxes() function when it
+    // creates the yScale.
+
+    // As the axis object is bound to the <g>, children <g> for each tick are created
+    // <g class="y axis">
+    //     <g class="tick">
+    //         <line x2="-6" y2="0"></line>                          <-- the tick mark
+    //         <text x="-9" y="0" dy=".32em" style="...">...</line>  <-- the tick label
+    //     </g>
+    //     ...
+    // </g>
+
+    // path.animatedPathSegList
+    // for (i = 0; i < path.animatedPathSegList.length; i++) {
+    //     seg = path.getItem(i);   // SVGPathSeg seg
+    //     if (seg.pathSegType != 2) { continue; }  // 2 = SVGPathSegMovetoAbs
+    //     height = seg.y;   // a negative value
+    //     break;
+    // }
+    // 
+    var gDom = g[0][0], seg;
+    var path = gDom.getElementsByTagName("path")[0];
+    for (var i = 0; i < path.animatedPathSegList.length; i++) {
+        seg = path.animatedPathSegList.getItem(i);   // SVGPathSeg seg
+        if (seg.pathSegType != 2) { continue; }  // 2 = SVGPathSegMovetoAbs
+        yAxis.svgGroup.height = seg.y;   // a negative value
+        break;
+    }
+
+    return yAxis;
+};
+
+var createGridLines = function (ctId, xAxis, yAxis) {
+
+    // create vertical <line> having class="grid-line" to each <g class="tick">
+    // <g class="x axis">
+    //     <g class="tick">
+    //         <line x2="-6" y2="0"></line>                                     <-- the tick mark
+    //         <text x="-9" y="0" dy=".32em" style="...">...</line>             <-- the tick label
+    //         <line class="grid-line" x1="0" y1="0" x2="0" y2="-300"></line>   <-- grid line
+    //     </g>
+    //     ...
+    // </g>
+    d3.selectAll("#"+ctId+" g.x g.tick")
+      .append("line")
+      .classed("grid-line", true)
+      .attr("x1", 0)
+      .attr("y1", 0)
+      .attr("x2", 0)
+      .attr("y2", yAxis.svgGroup.height);
+            
+    // create horizontal <line> having class="grid-line" to each <g class="tick">
+    // <g class="y axis">
+    //     <g class="tick">
+    //         <line x2="-6" y2="0"></line>                                    <-- the tick mark
+    //         <text x="-9" y="0" dy=".32em" style="...">...</line>            <-- the tick label
+    //         <line class="grid-line" x1="0" y1="0" x2="470" y2="0"></line>   <-- grid line
+    //     </g>
+    //     ...
+    // </g>
+    d3.selectAll("#"+ctId+" g.y g.tick")
+      .append("line")
+      .classed("grid-line", true)
+      .attr("x1", 0)
+      .attr("y1", 0)
+      .attr("x2", xAxis.svgGroup.width)
+      .attr("y2", 0);
+};
+
+jQuery.noConflict();
+jQuery(document).ready(function($){     // jQuery(function($) {
+    // $ refers to jQuery
+    // this refers to document
+
+    // create container div
+    var ctId = "chart-container";
+    var containerDiv = createContainerDom(ctId);
+    document.getElementsByTagName("body")[0].appendChild(containerDiv);
+
+    // create SVG container
+    var svg = d3.select("#"+ctId)
+                .append("svg")
+                .attr("class", "chart")
+                .attr("width", containerDiv.clientWidth)
+                .attr("height", containerDiv.clientHeight);
+ 
+    var axes = createAxes(svg, margin);
+
+    // define body clip
+    var clipDefId = "body-clip";
+    var padding = 5;
+    defineBodyClip(svg, clipDefId, {
+        left: axes.plotArea.left,
+        top: axes.plotArea.top + axes.plotArea.height,
+        width: axes.plotArea.width,
+        height: Math.abs(axes.plotArea.height)
+    }, padding);
+
+    // bind the body clip to the svg.
+    svg.attr("clip-path", "url(#"+clipDefId+")");
+});
+</script>
+</head>
+<body>
+
+</body>
+</html>
